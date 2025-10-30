@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3DES-CBC 加密工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 背景 -->
+    <div class="animated-background"></div>
+    
+    <!-- SVG滤镜 -->
+    <svg style="display: none">
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+            <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence" />
+            <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+            <feDisplacementMap in="SourceGraphic" in2="softMap" scale="15" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 标题 -->
+        <header class="header">
+            <h1>3DES-CBC 加密工具</h1>
+            <p class="subtitle">by douer_lucky All rights reserved</p>
+        </header>
+
+        <!-- 密钥配置卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h2>密钥配置</h2>
+                <button class="btn-secondary" onclick="generateRandomKeys()">随机生成全部</button>
+            </div>
+            
+            <div class="input-group">
+                <label for="k1">密钥 1</label>
+                <div class="input-with-button">
+                    <input type="text" id="k1" placeholder="16位十六进制 (例: 133457799BBCDFF1)" maxlength="16">
+                    <button class="btn-icon" onclick="generateKey('k1')" title="随机生成">⚄</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="k2">密钥 2</label>
+                <div class="input-with-button">
+                    <input type="text" id="k2" placeholder="16位十六进制" maxlength="16">
+                    <button class="btn-icon" onclick="generateKey('k2')" title="随机生成">⚄</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="k3">密钥 3</label>
+                <div class="input-with-button">
+                    <input type="text" id="k3" placeholder="16位十六进制" maxlength="16">
+                    <button class="btn-icon" onclick="generateKey('k3')" title="随机生成">⚄</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="iv">随机数(IV)</label>
+                <div class="input-with-button">
+                    <input type="text" id="iv" placeholder="16位十六进制" maxlength="16">
+                    <button class="btn-icon" onclick="generateKey('iv')" title="随机生成">⚄</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件操作卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <h2>内容操作</h2>
+            </div>
+
+            <!-- 内容类型选择 -->
+            <div class="input-group">
+                <label>内容类型</label>
+                <div class="content-type-selector">
+                    <label class="radio-label">
+                        <input type="radio" name="contentType" value="file" checked onchange="switchContentType()">
+                        <span class="radio-custom">文件</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="contentType" value="text" onchange="switchContentType()">
+                        <span class="radio-custom">文本</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 文件上传区域 -->
+            <div id="fileSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">↑</div>
+                    <p class="upload-text">拖拽文件到这里或点击选择</p>
+                    <p class="upload-hint">支持任意文件格式</p>
+                    <input type="file" id="fileInput" hidden>
+                </div>
+
+                <!-- 已选文件显示 -->
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-name-row">
+                        <div class="file-name" id="fileName"></div>
+                        <button class="btn-remove" onclick="removeFile()">×</button>
+                    </div>
+                    <div class="file-size" id="fileSize"></div>
+                    <!-- 预览区域会通过JS动态添加到这里 -->
+                </div>
+            </div>
+
+            <!-- 文本输入区域 -->
+            <div id="textSection" style="display: none;">
+                <div class="input-group">
+                    <label for="inputText">输入文本</label>
+                    <textarea id="inputText" placeholder="输入要加密或解密的文本..."></textarea>
+                </div>
+            </div>
+
+            <!-- 操作模式选择 -->
+            <div class="operation-mode">
+                <label class="radio-label">
+                    <input type="radio" name="operation" value="encrypt" checked>
+                    <span class="radio-custom">加密</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="operation" value="decrypt">
+                    <span class="radio-custom">解密</span>
+                </label>
+            </div>
+
+            <!-- 解密扩展名选择（仅文件解密时显示） -->
+            <div class="input-group" id="extensionGroup" style="display: none;">
+                <label>解密后文件扩展名</label>
+                <div class="extension-buttons">
+                    <button class="ext-btn" onclick="selectExtension('txt')">txt</button>
+                    <button class="ext-btn" onclick="selectExtension('jpg')">jpg</button>
+                    <button class="ext-btn" onclick="selectExtension('png')">png</button>
+                    <button class="ext-btn" onclick="selectExtension('mp3')">mp3</button>
+                    <button class="ext-btn" onclick="selectExtension('mp4')">mp4</button>
+                    <button class="ext-btn active" onclick="selectExtension('custom')">自定义</button>
+                </div>
+                <input type="text" id="customExtension" placeholder="输入自定义扩展名" maxlength="10">
+            </div>
+
+            <!-- 操作按钮 -->
+            <button class="btn-primary" id="processBtn" onclick="processContent()">
+                <span id="btnText">开始处理</span>
+            </button>
+
+            <!-- 状态图片 -->
+            <div class="status-image-container" id="statusImageContainer">
+                <img id="statusImage" src="./assets/idle.gif" alt="状态">
+            </div>
+        </div>
+
+        <!-- 进度显示 -->
+        <div class="card progress-card" id="progressCard" style="display: none;">
+            <div class="progress-header">
+                <span id="progressStatus">处理中...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-info" id="progressInfo"></div>
+            
+            <!-- 进度GIF（缩小并居中） -->
+            <div class="progress-gif">
+                <img src="./assets/process.gif" alt="处理中">
+            </div>
+        </div>
+
+        <!-- 结果显示 -->
+        <div class="card result-card" id="resultCard" style="display: none;">
+            <div class="result-icon" id="resultIcon">√</div>
+            <div class="result-message" id="resultMessage"></div>
+            
+            <!-- 预览区域 -->
+            <div class="preview-section" id="resultPreviewArea" style="display: none;">
+                <h3>预览</h3>
+                <div id="resultPreviewContent"></div>
+            </div>
+            
+            <!-- 下载按钮 -->
+            <div id="downloadButtonArea" style="display: none; margin-top: 20px;">
+                <button class="btn-primary" onclick="downloadResult()">
+                    <span>下载文件</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <p>将自动保存上一次使用的密钥，请妥善保管密钥，丢失密钥将无法解密文件</p>
+            <p>服务端口：<span id="serverStatus">检测中...</span></p>
+            <p>人物：Akie秋绘 b站：https://space.bilibili.com/4176573</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
